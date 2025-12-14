@@ -10,20 +10,34 @@
       <header class="popup__header">
         <img src="icon48.png" alt="" class="popup__logo" />
         <h1 class="popup__title">Gomtu Everywhere</h1>
-        <button
-          type="button"
-          class="popup__settings-btn"
-          aria-label="Buka pengaturan"
-          data-tab-target="settings"
-          title="Pengaturan"
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm8.25 2.5c0-.32-.02-.63-.05-.94l1.5-1.17a.5.5 0 0 0 .12-.64l-1.42-2.46a.5.5 0 0 0-.6-.22l-1.77.71a8 8 0 0 0-1.62-.94l-.27-1.87a.5.5 0 0 0-.5-.43h-2.84a.5.5 0 0 0-.5.43l-.27 1.87c-.58.24-1.12.56-1.62.94l-1.77-.71a.5.5 0 0 0-.6.22L2.18 9.25a.5.5 0 0 0 .12.64l1.5 1.17c-.03.31-.05.62-.05.94s.02.63.05.94l-1.5 1.17a.5.5 0 0 0-.12.64l1.42 2.46c.13.22.39.3.6.22l1.77-.71c.5.38 1.04.7 1.62.94l.27 1.87a.5.5 0 0 0 .5.43h2.84a.5.5 0 0 0 .5-.43l.27-1.87c.58-.24 1.12-.56 1.62-.94l1.77.71c.23.09.48 0 .6-.22l1.42-2.46a.5.5 0 0 0-.12-.64l-1.5-1.17c.03-.31.05-.62.05-.94z"
-            />
-          </svg>
-        </button>
+        <div class="popup__header-actions">
+          <div class="popup__power" title="Toggle extension automation">
+            <span class="popup__power-text" id="extension-enabled-label">Extension On</span>
+            <label class="popup__power-switch">
+              <input
+                type="checkbox"
+                id="extension-enabled-toggle"
+                name="extensionEnabled"
+                aria-label="Enable or disable the extension automation"
+              />
+              <span class="popup__power-slider" aria-hidden="true"></span>
+            </label>
+          </div>
+          <button
+            type="button"
+            class="popup__settings-btn"
+            aria-label="Buka pengaturan"
+            data-tab-target="settings"
+            title="Pengaturan"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M12 9.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zm8.25 2.5c0-.32-.02-.63-.05-.94l1.5-1.17a.5.5 0 0 0 .12-.64l-1.42-2.46a.5.5 0 0 0-.6-.22l-1.77.71a8 8 0 0 0-1.62-.94l-.27-1.87a.5.5 0 0 0-.5-.43h-2.84a.5.5 0 0 0-.5.43l-.27 1.87c-.58.24-1.12.56-1.62.94l-1.77-.71a.5.5 0 0 0-.6.22L2.18 9.25a.5.5 0 0 0 .12.64l1.5 1.17c-.03.31-.05.62-.05.94s.02.63.05.94l-1.5 1.17a.5.5 0 0 0-.12.64l1.42 2.46c.13.22.39.3.6.22l1.77-.71c.5.38 1.04.7 1.62.94l.27 1.87a.5.5 0 0 0 .5.43h2.84a.5.5 0 0 0 .5-.43l.27-1.87c.58-.24 1.12-.56 1.62-.94l1.77.71c.23.09.48 0 .6-.22l1.42-2.46a.5.5 0 0 0-.12-.64l-1.5-1.17c.03-.31.05-.62.05-.94z"
+              />
+            </svg>
+          </button>
+        </div>
       </header>
 
       <nav class="tabs" role="tablist" aria-label="Navigasi popup">

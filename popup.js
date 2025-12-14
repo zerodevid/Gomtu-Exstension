@@ -1,4 +1,5 @@
 const DEFAULT_SETTINGS = {
+  extensionEnabled: true,
   showStatus: true,
   showYaps: true,
   showLeaderboard: true,
@@ -325,6 +326,7 @@ function sanitizeStringSetting(key, value) {
 
 function resolveSettingValue(key, rawValue) {
   switch (key) {
+    case "extensionEnabled":
     case "showStatus":
     case "showYaps":
     case "showLeaderboard":
@@ -455,6 +457,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   const settings = await loadSettings();
   const form = document.getElementById("settings-form");
   const inputs = form ? Array.from(form.querySelectorAll("input[name]")) : [];
+  const globalToggle = document.getElementById("extension-enabled-toggle");
+  const globalToggleLabel = document.getElementById("extension-enabled-label");
+
+  const updateGlobalToggle = (value) => {
+    if (!globalToggle) return;
+    const checked = Boolean(value);
+    globalToggle.checked = checked;
+    if (globalToggleLabel) {
+      globalToggleLabel.textContent = checked ? "Extension On" : "Extension Off";
+    }
+  };
 
   inputs.forEach((input) => {
     const key = input.name;
@@ -466,6 +479,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else if (input.type === "text") {
       input.value = sanitizeStringSetting(key, settings[key]);
     }
+  });
+
+  updateGlobalToggle(settings.extensionEnabled);
+  globalToggle?.addEventListener("change", () => {
+    const value = Boolean(globalToggle.checked);
+    updateGlobalToggle(value);
+    saveSetting("extensionEnabled", value);
   });
 
   form?.addEventListener("change", (event) => {

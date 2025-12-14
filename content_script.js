@@ -27,6 +27,7 @@ const LEADERBOARD_PRIORITY_MAP = LEADERBOARD_DURATION_PRIORITY.reduce((map, key,
 }, {});
 
 const DEFAULT_SETTINGS = Object.freeze({
+  extensionEnabled: true,
   showStatus: true,
   showYaps: true,
   showLeaderboard: true,
@@ -84,6 +85,21 @@ let autoScrollTimer = null;
 let leaderboardFilterTokens = [];
 const processedTweetStates = new Map();
 
+function isExtensionEnabled(settings = currentSettings) {
+  return settings?.extensionEnabled !== false;
+}
+
+function teardownExtensionUi() {
+  document.querySelectorAll(".gomtu-badge-row, .gomtu-leaderboard-toggle").forEach((node) => node.remove());
+  document.querySelectorAll("[data-gomtu-eligible]").forEach((article) => {
+    article.removeAttribute("data-gomtu-eligible");
+    article.removeAttribute("data-gomtu-processed");
+  });
+  document.querySelectorAll("[data-gomtu-tweet-id]").forEach((article) => article.removeAttribute("data-gomtu-tweet-id"));
+  document.querySelectorAll("[data-gomtu-tweet-key]").forEach((article) => article.removeAttribute("data-gomtu-tweet-key"));
+  processedTweetStates.clear();
+}
+
 function markTweetState(tweetKey, status) {
   if (!tweetKey) return;
   processedTweetStates.set(tweetKey, status);
@@ -109,6 +125,7 @@ function clearAutoReplyQueue(markStatus = "skipped") {
 function resolveSettingValue(key, rawValue) {
   if (rawValue === undefined) return DEFAULT_SETTINGS[key];
   switch (key) {
+    case "extensionEnabled":
     case "showStatus":
     case "showYaps":
     case "showLeaderboard":
@@ -221,18 +238,30 @@ function handleAutomationSettingsChange(changedKeys) {
   const touchedThresholds = changedKeys.some((key) =>
     ["minSmartFollowers", "minTotalYaps", "leaderboardProjectFilter"].includes(key)
   );
+  const touchedExtensionEnabled = changedKeys.includes("extensionEnabled");
 
   if (touchedAutoScroll) {
-    if (currentSettings.autoScrollEnabled) scheduleAutoScroll(true);
+    if (currentSettings.autoScrollEnabled && isExtensionEnabled()) scheduleAutoScroll(true);
     else stopAutoScroll();
   }
 
-  if (touchedAutoReply && !currentSettings.autoReplyEnabled) {
+  if (touchedAutoReply && (!currentSettings.autoReplyEnabled || !isExtensionEnabled())) {
     clearAutoReplyQueue("skipped");
   }
 
-  if (touchedThresholds) {
+  if (touchedThresholds && isExtensionEnabled()) {
     clearAutoReplyQueue("skipped");
+  }
+
+  if (touchedExtensionEnabled) {
+    if (isExtensionEnabled()) {
+      processTweets();
+      if (currentSettings.autoScrollEnabled) startAutoScroll();
+    } else {
+      clearAutoReplyQueue("skipped");
+      stopAutoScroll();
+      teardownExtensionUi();
+    }
   }
 }
 
@@ -291,7 +320,7 @@ function matchesLeaderboardFilter(entries) {
 }
 
 function shouldAutoReply(data, settings = currentSettings) {
-  if (!data || !settings?.autoReplyEnabled) return false;
+  if (!data || !settings?.autoReplyEnabled || settings.extensionEnabled === false) return false;
 
   const smartFollowers = Number(data?.status?.smart_follower_count) || 0;
   const totalYaps = getTotalYaps(data?.yaps);
@@ -473,6 +502,10 @@ async function performAutoReply({ article, username, tweetKey }) {
 }
 
 async function processAutoReplyQueue() {
+  if (!isExtensionEnabled()) {
+    clearAutoReplyQueue("skipped");
+    return;
+  }
   if (autoReplyActive) return;
   if (!autoReplyQueue.length) return;
   autoReplyActive = true;
@@ -542,6 +575,7 @@ async function processAutoReplyQueue() {
 function enqueueAutoReply(article, username, data, settings) {
   if (!article) return;
   const controls = settings || currentSettings;
+  if (controls.extensionEnabled === false) return;
   const tweetKey = getArticleKey(article, username);
   if (!tweetKey) return;
 
@@ -587,7 +621,7 @@ function stopAutoScroll() {
 
 function scheduleAutoScroll(useInitialDelay = false) {
   stopAutoScroll();
-  if (!currentSettings.autoScrollEnabled) return;
+  if (!currentSettings.autoScrollEnabled || !isExtensionEnabled()) return;
   const delay = useInitialDelay ? AUTO_SCROLL_INITIAL_DELAY_MS : getAutoScrollDelayMs();
   autoScrollTimer = setTimeout(() => {
     autoScrollStep().catch((err) => {
@@ -597,6 +631,10 @@ function scheduleAutoScroll(useInitialDelay = false) {
 }
 
 function startAutoScroll() {
+  if (!currentSettings.autoScrollEnabled || !isExtensionEnabled()) {
+    stopAutoScroll();
+    return;
+  }
   scheduleAutoScroll(true);
 }
 
@@ -674,7 +712,7 @@ async function ensureArticleVisible(article) {
 }
 
 async function bringNextTargetIntoView(currentArticle = null, { maxAttempts = 5 } = {}) {
-  if (!currentSettings.autoScrollEnabled) return false;
+  if (!currentSettings.autoScrollEnabled || !isExtensionEnabled()) return false;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const nextTarget = findNextTargetArticle(currentArticle);
@@ -697,12 +735,12 @@ async function bringNextTargetIntoView(currentArticle = null, { maxAttempts = 5 
 }
 
 async function focusNextTargetAfterReply(_currentArticle) {
-  if (!currentSettings.autoScrollEnabled) return;
+  if (!currentSettings.autoScrollEnabled || !isExtensionEnabled()) return;
   scheduleAutoScroll();
 }
 
 async function autoScrollStep() {
-  if (!currentSettings.autoScrollEnabled) {
+  if (!currentSettings.autoScrollEnabled || !isExtensionEnabled()) {
     stopAutoScroll();
     return;
   }
@@ -870,6 +908,7 @@ async function insertBadge(el, username) {
 
   const [settings, data] = await Promise.all([getSettings(), getScore(username)]);
   if (!data) return;
+  if (settings.extensionEnabled === false) return;
 
   let lastRow = nameBlock;
 
@@ -1021,6 +1060,7 @@ function findUsernameFromEl(el) {
 }
 
 function processTweets(root = document) {
+  if (!isExtensionEnabled()) return;
   const tweets = root.querySelectorAll('[data-testid="User-Name"], [role="article"]');
   tweets.forEach((tweet) => {
     const username = findUsernameFromEl(tweet);
@@ -1040,5 +1080,7 @@ const observer = new MutationObserver((muts) => {
 observer.observe(document, { childList: true, subtree: true });
 processTweets();
 settingsPromise.then(() => {
-  startAutoScroll();
+  if (currentSettings.autoScrollEnabled && isExtensionEnabled()) {
+    startAutoScroll();
+  }
 });
